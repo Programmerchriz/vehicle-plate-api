@@ -41,3 +41,8 @@ def login_user(
     "access_token": token,
     "token_type": "bearer",
   }
+
+def logout_user():
+  return {
+      "message": "Logged out successfully.",
+  }

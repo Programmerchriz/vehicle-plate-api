@@ -5,9 +5,10 @@ from app.config.database import get_db
 from app.dependencies.auth import get_current_user
 from app.schemas.auth import LoginRequest, TokenResponse
 from app.schemas.user import UserResponse
-from app.services.auth_service import (
+from app.services.auth import (
   authenticate_user,
   login_user,
+  logout_user,
 )
 
 router = APIRouter(
@@ -38,6 +39,9 @@ def login(
 
   return login_user(user)
 
+@router.post("/logout")
+def logout():
+  return logout_user()
 
 @router.get(
   "/me",
