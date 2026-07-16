@@ -1,5 +1,5 @@
 from sqlalchemy import Boolean, Enum, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import BaseModel
 from app.models.enums import UserRole
@@ -35,4 +35,9 @@ class User(BaseModel):
     Boolean,
     default=True,
     nullable=False,
+  )
+
+  registered_vehicles = relationship(
+    "Vehicle",
+    back_populates="created_by",
   )
