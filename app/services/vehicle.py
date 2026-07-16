@@ -1,10 +1,33 @@
-from sqlalchemy import Select, select
+from sqlalchemy import (
+  asc,
+  desc,
+  Select,
+	select,
+)
 from sqlalchemy.orm import Session
 
 from app.models.user import User
 from app.models.vehicle import Vehicle
-from app.schemas.vehicle import VehicleCreate, VehicleUpdate
+from app.schemas.vehicle import (
+  VehicleCreate,
+	VehicleUpdate,
+)
+from app.models.enums import (
+  VehicleStatus,
+  VehicleType,
+	)
 
+from app.exceptions.vehicle import (
+	VehicleAlreadyExistsError,
+	VehicleNotFoundError,
+)
+
+SORT_COLUMNS = {
+	"plate_number": Vehicle.plate_number,
+	"owner_name": Vehicle.owner_name,
+	"registration_date": Vehicle.registration_date,
+	"created_at": Vehicle.created_at,
+}
 
 class VehicleService:
 	def __init__(self, db: Session):
@@ -20,7 +43,7 @@ class VehicleService:
 		existing_vehicle = self.get_vehicle_by_plate(plate_number)
 
 		if existing_vehicle:
-			raise ValueError("Vehicle with this plate number already exists.")
+			raise VehicleAlreadyExistsError("Vehicle with this plate number already exists.")
 
 		vehicle = Vehicle(
 			plate_number=plate_number,
@@ -61,9 +84,9 @@ class VehicleService:
 			existing = self.get_vehicle_by_plate(update_data["plate_number"])
 
 			if existing and existing.id != vehicle.id:
-				raise ValueError(
-					"Vehicle with this plate number already exists."
-				)
+				raise VehicleAlreadyExistsError(
+          "Vehicle with this plate number already exists."
+        )
 
 		for field, value in update_data.items():
 			if isinstance(value, str):
@@ -108,11 +131,13 @@ class VehicleService:
 		return self.db.scalar(statement)
 
 	def search(
-		self,
-		search: str | None = None,
-		status=None,
-		vehicle_type=None,
-	) -> Select[tuple[Vehicle]]:
+    self,
+    *,
+    search: str | None = None,
+    status: VehicleStatus | None = None,
+    vehicle_type: VehicleType | None = None,
+    sort: str | None = None,
+  ) -> Select[tuple[Vehicle]]:
 		statement = select(Vehicle)
 
 		if search:
@@ -134,5 +159,15 @@ class VehicleService:
 			statement = statement.where(
 				Vehicle.vehicle_type == vehicle_type
 			)
+		
+		if sort:
+			descending = sort.startswith("-")
+			column_name = sort.removeprefix("-")
+			column = SORT_COLUMNS.get(column_name)
+			
+			if column:
+				statement = statement.order_by(
+          desc(column) if descending else asc(column)
+        )
 
 		return statement

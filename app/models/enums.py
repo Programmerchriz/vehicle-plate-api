@@ -11,6 +11,7 @@ class VehicleStatus(str, Enum):
   INACTIVE = "INACTIVE"
   EXPIRED = "EXPIRED"
   SUSPENDED = "SUSPENDED"
+
 class VehicleType(str, Enum):
   CAR = "CAR"
   SUV = "SUV"
