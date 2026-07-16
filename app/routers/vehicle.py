@@ -115,14 +115,14 @@ def get_vehicle_by_plate(
 	return vehicle
 
 
-@router.get(
-	"/{vehicle_id}",
-	response_model=VehicleResponse,
-)
-def get_vehicle_by_id(
-	vehicle: Vehicle = Depends(get_vehicle),
-):
-	return vehicle
+# @router.get(
+# 	"/{vehicle_id}",
+# 	response_model=VehicleResponse,
+# )
+# def get_vehicle_by_id(
+# 	vehicle: Vehicle = Depends(get_vehicle),
+# ):
+# 	return vehicle
 
 
 @router.post(
