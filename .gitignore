@@ -17,6 +17,9 @@ __pycache__/
 # Database
 *.db
 
+# docker
+docker-compose.yml
+
 # Logs
 *.log
 
