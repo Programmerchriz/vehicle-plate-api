@@ -13,30 +13,17 @@ class DashboardService:
 		total_vehicles = self.db.scalar(
 			select(func.count(Vehicle.id))
 		) or 0
-
-		active_vehicles = self.db.scalar(
-			select(func.count(Vehicle.id)).where(
-				Vehicle.status == VehicleStatus.ACTIVE
-			)
-		) or 0
-
-		inactive_vehicles = self.db.scalar(
-			select(func.count(Vehicle.id)).where(
-				Vehicle.status == VehicleStatus.INACTIVE
-			)
-		) or 0
-
-		expired_vehicles = self.db.scalar(
-			select(func.count(Vehicle.id)).where(
-				Vehicle.status == VehicleStatus.EXPIRED
-			)
-		) or 0
-
-		suspended_vehicles = self.db.scalar(
-			select(func.count(Vehicle.id)).where(
-				Vehicle.status == VehicleStatus.SUSPENDED
-			)
-		) or 0
+		
+		status_counts = {
+      status: count
+      for status, count in self.db.execute(
+        select(
+          Vehicle.status,
+          func.count(Vehicle.id),
+        )
+        .group_by(Vehicle.status)
+      ).all()
+    }
 
 		recent_registrations = self.db.scalars(
 			select(Vehicle)
@@ -45,10 +32,22 @@ class DashboardService:
 		).all()
 
 		return {
-			"total_vehicles": total_vehicles,
-			"active_vehicles": active_vehicles,
-			"inactive_vehicles": inactive_vehicles,
-			"expired_vehicles": expired_vehicles,
-			"suspended_vehicles": suspended_vehicles,
-			"recent_registrations": recent_registrations,
-		}
+      "total_vehicles": total_vehicles,
+      "active_vehicles": status_counts.get(
+        VehicleStatus.ACTIVE,
+        0,
+      ),
+      "inactive_vehicles": status_counts.get(
+        VehicleStatus.INACTIVE,
+        0,
+      ),
+      "expired_vehicles": status_counts.get(
+        VehicleStatus.EXPIRED,
+        0,
+      ),
+      "suspended_vehicles": status_counts.get(
+        VehicleStatus.SUSPENDED,
+        0,
+      ),
+      "recent_registrations": recent_registrations,
+    }
