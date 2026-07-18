@@ -19,5 +19,12 @@ class Settings(BaseSettings):
         case_sensitive=True,
     )
 
+    YOLO_MODEL_PATH: str = "app/ai/models/license_plate.pt"
+    MAX_IMAGE_SIZE: int = 10 * 1024 * 1024
+    PLATE_IMAGE_WIDTH: int = 600
+    PLATE_IMAGE_HEIGHT: int = 200
+    DETECTION_CONFIDENCE_THRESHOLD: float = 0.55
+    OCR_CONFIDENCE_THRESHOLD: float = 0.40
+
 
 settings = Settings()
