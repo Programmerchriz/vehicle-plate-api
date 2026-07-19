@@ -11,6 +11,8 @@ from app.schemas.recognition import (
   RecognitionResponse,
 )
 from app.services.recognition import RecognitionService
+from app.services.detector import PlateDetectionService
+from app.services.ocr import OCRService
 
 
 router = APIRouter(
@@ -23,6 +25,13 @@ recognition_service = RecognitionService()
 
 @router.post(
   "/image",
+  summary="Recognize a license plate from an uploaded image",
+  description=(
+    "Uploads a vehicle image, detects the license plate, "
+    "extracts the plate number using OCR, and returns "
+    "the recognition result."
+  ),
+
   response_model=RecognitionResponse,
   responses={
     status.HTTP_400_BAD_REQUEST: {
@@ -33,6 +42,7 @@ recognition_service = RecognitionService()
     },
   },
 )
+
 async def recognize_image(
   file: UploadFile = File(...),
 ) -> RecognitionResponse:
@@ -45,8 +55,29 @@ async def recognize_image(
       detail=str(exc),
     ) from exc
 
+  # except Exception as exc:
+  #   raise HTTPException(
+  #     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+  #     detail="Failed to process image.",
+  #   ) from exc # production
+
   except Exception as exc:
+    import traceback
+    traceback.print_exc()
+
     raise HTTPException(
       status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-      detail="Failed to process image.",
-    ) from exc
+      detail=str(exc),
+    ) from exc # temp - development
+
+
+@router.get(
+  "/health",
+  summary="Recognition endpoint health check",
+  )
+async def health() -> dict[str, str]:
+  return {
+    "status": "healthy" if PlateDetectionService._model else "unhealthy",
+    "detector": "ready" if PlateDetectionService._model else "not_loaded",
+    "ocr": "ready" if OCRService._reader else "not_loaded",
+  }
