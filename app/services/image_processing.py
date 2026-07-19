@@ -67,16 +67,16 @@ class ImageProcessingService:
 
     return image[y1:y2, x1:x2]
 
-  def crop_plate_number_region(
-    self,
-    image: np.ndarray,
-  ) -> np.ndarray:
-    height, width = image.shape[:2]
+  # def crop_plate_number_region(
+  #   self,
+  #   image: np.ndarray,
+  # ) -> np.ndarray:
+  #   height, width = image.shape[:2]
 
-    return image[
-      int(height * 0.28):int(height * 0.82),
-      int(width * 0.05):int(width * 0.95),
-    ]
+  #   return image[
+  #     int(height * 0.28):int(height * 0.82),
+  #     int(width * 0.05):int(width * 0.95),
+  #   ]
   
   def to_grayscale(self, image: np.ndarray) -> np.ndarray:
     return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)

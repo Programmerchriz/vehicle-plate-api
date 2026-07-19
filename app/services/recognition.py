@@ -1,157 +1,182 @@
+import logging
 import time
 
 from fastapi import UploadFile
-import logging
 
+from app.config.settings import settings
 from app.schemas.recognition import (
-  BoundingBox,
-  RecognitionResponse,
+    BoundingBox,
+    RecognitionResponse,
 )
 from app.services.detector import PlateDetectionService
 from app.services.image_processing import ImageProcessingService
 from app.services.ocr import OCRService
-
-from app.config.settings import settings
 from app.utils.debug import save_debug_image
-
 
 logger = logging.getLogger(__name__)
 
+
 class RecognitionService:
-  def __init__(self) -> None:
-    self.image_processing = ImageProcessingService()
-    self.detector = PlateDetectionService()
-    self.ocr = OCRService()
+    def __init__(self) -> None:
+        self.image_processing = ImageProcessingService()
+        self.detector = PlateDetectionService()
+        self.ocr = OCRService()
 
-  async def recognize_image(
-    self,
-    file: UploadFile,
-  ) -> RecognitionResponse:
-    start_time = time.perf_counter()
+    async def recognize_image(
+        self,
+        file: UploadFile,
+    ) -> RecognitionResponse:
 
-    try:
-      await self.image_processing.validate_image(file)
-      image = await self.image_processing.decode_image(file)
+        start_time = time.perf_counter()
 
-      save_debug_image(
-        "1_original.jpg",
-        image,
-      )
+        try:
+            await self.image_processing.validate_image(file)
 
-      detection = self.detector.detect(image)
+            image = await self.image_processing.decode_image(file)
 
-      if detection is None:
-        raise ValueError("No license plate detected.")
+            save_debug_image(
+                "1_original.jpg",
+                image,
+            )
 
-      bbox = detection.bounding_box
+            detection = self.detector.detect(image)
 
-      plate_image = self.image_processing.crop_image(
-        image=image,
-        x1=bbox.x1,
-        y1=bbox.y1,
-        x2=bbox.x2,
-        y2=bbox.y2,
-      )
+            if detection is None:
+                raise ValueError(
+                    "No license plate detected."
+                )
 
-      save_debug_image(
-        "2_crop.jpg",
-        plate_image,
-      )
+            bbox = detection.bounding_box
 
-      # plate_image = self.image_processing.crop_plate_number_region(
-      #   plate_image,
-      # )
+            #
+            # Crop detected plate
+            #
+            plate_image = self.image_processing.crop_image(
+                image=image,
+                x1=bbox.x1,
+                y1=bbox.y1,
+                x2=bbox.x2,
+                y2=bbox.y2,
+            )
 
-      # save_debug_image(
-      #   "2_5_plate_number_region.jpg",
-      #   plate_image,
-      # )
+            save_debug_image(
+                "2_plate.jpg",
+                plate_image,
+            )
 
-      gray_plate = self.image_processing.to_grayscale(
-        plate_image,
-      )
+            #
+            # Pre-processing
+            #
+            gray = self.image_processing.to_grayscale(
+                plate_image,
+            )
 
-      save_debug_image(
-        "3_grayscale.jpg",
-        gray_plate,
-      )
+            gray = self.image_processing.resize(
+                gray,
+                width=settings.PLATE_IMAGE_WIDTH,
+            )
 
-      gray_plate = self.image_processing.resize(
-        gray_plate,
-        width=settings.PLATE_IMAGE_WIDTH,
-      )
+            save_debug_image(
+                "3_gray.jpg",
+                gray,
+            )
 
-      blurred_plate = self.image_processing.gaussian_blur(
-        gray_plate,
-      )
+            threshold = self.image_processing.adaptive_threshold(
+                gray,
+            )
 
-      threshold_plate = self.image_processing.adaptive_threshold(
-        blurred_plate,
-      )
+            save_debug_image(
+                "4_threshold.jpg",
+                threshold,
+            )
 
-      save_debug_image(
-        "4_threshold.jpg",
-        threshold_plate,
-      )
+            #
+            # OCR
+            #
+            gray_result = self.ocr.read_text(gray)
 
-      gray_result = self.ocr.read_text(
-        gray_plate,
-      )
+            threshold_result = self.ocr.read_text(
+                threshold
+            )
 
-      threshold_result = self.ocr.read_text(
-        threshold_plate,
-      )
+            #
+            # Merge OCR candidates
+            #
+            all_candidates = (
+                gray_result.candidates
+                + threshold_result.candidates
+            )
 
-      ocr_result = max(
-        (
-          gray_result,
-          threshold_result,
-        ),
-        key=lambda result: result.confidence,
-      )
+            unique_candidates = {}
 
-      if not ocr_result.plate_number:
-        raise ValueError(
-          "Unable to recognize license plate."
+            for candidate in all_candidates:
+                existing = unique_candidates.get(
+                    candidate.text
+                )
+
+                if (
+                    existing is None
+                    or candidate.confidence
+                    > existing.confidence
+                ):
+                    unique_candidates[
+                        candidate.text
+                    ] = candidate
+
+            ranked_candidates = sorted(
+                unique_candidates.values(),
+                key=lambda candidate: (
+                    candidate.confidence
+                ),
+                reverse=True,
+            )[:5]
+
+            if not ranked_candidates:
+                raise ValueError(
+                    "Unable to recognize license plate."
+                )
+
+            best_candidate = ranked_candidates[0]
+
+        except ValueError:
+            raise
+
+        except Exception as exc:
+            logger.exception(
+                "Recognition pipeline failed."
+            )
+
+            raise RuntimeError(
+                "Recognition pipeline failed."
+            ) from exc
+
+        processing_time_ms = (
+            time.perf_counter() - start_time
+        ) * 1000
+
+        confidence = round(
+            (
+                detection.confidence
+                + best_candidate.confidence
+            )
+            / 2,
+            2,
         )
 
-    except ValueError:
-      raise
-
-    except Exception as exc:
-      logger.exception(
-        "Recognition pipeline failed."
-      )
-
-      raise RuntimeError(
-        "Recognition pipeline failed."
-      ) from exc
-
-    processing_time_ms = (
-      time.perf_counter() - start_time
-    ) * 1000
-
-    confidence = round(
-      (
-        detection.confidence +
-        ocr_result.confidence
-      ) / 2,
-      2,
-    )
-
-    return RecognitionResponse(
-      plate_number=ocr_result.plate_number,
-      confidence=confidence,
-      detection_confidence=detection.confidence,
-      ocr_confidence=ocr_result.confidence,
-      bounding_box=BoundingBox(
-        x1=bbox.x1,
-        y1=bbox.y1,
-        x2=bbox.x2,
-        y2=bbox.y2,
-      ),
-      processing_time_ms=round(
-        processing_time_ms,
-        2,
-      ),
-    )
+        return RecognitionResponse(
+            plate_number=best_candidate.text,
+            confidence=confidence,
+            detection_confidence=detection.confidence,
+            ocr_confidence=best_candidate.confidence,
+            candidates=ranked_candidates,
+            bounding_box=BoundingBox(
+                x1=bbox.x1,
+                y1=bbox.y1,
+                x2=bbox.x2,
+                y2=bbox.y2,
+            ),
+            processing_time_ms=round(
+                processing_time_ms,
+                2,
+            ),
+        )

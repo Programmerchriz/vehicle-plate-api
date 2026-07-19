@@ -25,7 +25,6 @@ class OCRResult(BaseModel):
   confidence: float
   candidates: list[OCRCandidate]
 
-
 class RecognitionResponse(BaseModel):
   plate_number: str
   confidence: float
