@@ -3,6 +3,11 @@
 torch==2.7.1+cpu
 torchvision==0.22.1+cpu
 
+argon2-cffi==25.1.0
+argon2-cffi-bindings==25.1.0
+bcrypt==5.0.0
+passlib==1.7.4
+pwdlib==0.3.0
 alembic==1.18.5
 annotated-doc==0.0.4
 annotated-types==0.7.0
