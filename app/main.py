@@ -8,6 +8,7 @@ from app.routers.auth import router as auth_router
 from app.routers.vehicle import router as vehicle_router
 from app.routers.dashboard import router as dashboard_router
 from app.routers.recognition import router as recognition_router
+from app.routers.verification import router as verification_router
 # from app.routers.test import router as test_router
 
 from app.services.detector import PlateDetectionService
@@ -44,6 +45,7 @@ app.include_router(auth_router)
 app.include_router(vehicle_router)
 app.include_router(dashboard_router)
 app.include_router(recognition_router)
+app.include_router(verification_router)
 # app.include_router(test_router)
 
 
