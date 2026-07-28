@@ -31,7 +31,7 @@ class PlateRecognitionInfo(BaseModel):
   detected_plate: str
   detection_confidence: float | None = None
   ocr_confidence: float | None = None
-  processing_time: float | None = None
+  processing_time_ms: float | None = None
 
 
 class VerificationResponse(BaseModel):

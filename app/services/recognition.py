@@ -180,3 +180,5 @@ class RecognitionService:
                 2,
             ),
         )
+
+recognition_service = RecognitionService()

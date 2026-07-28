@@ -1,8 +1,5 @@
-import re
 from datetime import date
-from typing import Any
 
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.enums import UserRole, VehicleStatus
@@ -14,12 +11,19 @@ from app.schemas.verification import (
   VerificationResponse,
   VerificationVehicleSummary,
 )
+from app.services.vehicle import VehicleService
 
 
 class VerificationService:
   @staticmethod
-  def normalize_plate_number(plate_number: str) -> str:
-    return re.sub(r"[^A-Z0-9]", "", plate_number.upper())
+  def normalize_plate_number(
+    plate_number: str,
+  ) -> str:
+    return "".join(
+      character
+      for character in plate_number.strip().upper()
+      if character.isalnum()
+    )
 
   @classmethod
   def verify_plate(
@@ -29,35 +33,30 @@ class VerificationService:
     current_user: User,
     recognition: PlateRecognitionInfo | None = None,
   ) -> VerificationResponse:
-    normalized_plate = cls.normalize_plate_number(plate_number)
-
-    vehicle = (
-      db.query(Vehicle)
-      .filter(
-        func.replace(
-          func.replace(
-            func.upper(Vehicle.plate_number),
-            "-",
-            "",
-          ),
-          " ",
-          "",
-        )
-        == normalized_plate
-      )
-      .first()
+    normalized_plate = cls.normalize_plate_number(
+      plate_number
     )
 
-    if not vehicle:
+    vehicle_service = VehicleService(db)
+
+    vehicle = vehicle_service.get_vehicle_by_plate(
+      normalized_plate
+    )
+
+    if vehicle is None:
       return VerificationResponse(
         found=False,
         searched_plate=plate_number,
         normalized_plate=normalized_plate,
         message="Vehicle is not registered.",
+        vehicle=None,
+        owner=None,
         recognition=recognition,
       )
 
-    effective_status = cls._get_effective_status(vehicle)
+    effective_status = cls._get_effective_status(
+      vehicle
+    )
 
     vehicle_summary = VerificationVehicleSummary(
       plate_number=vehicle.plate_number,
@@ -81,26 +80,36 @@ class VerificationService:
       found=True,
       searched_plate=plate_number,
       normalized_plate=normalized_plate,
-      message=cls._get_status_message(effective_status),
+      message=cls._get_status_message(
+        effective_status
+      ),
       vehicle=vehicle_summary,
       owner=owner,
       recognition=recognition,
     )
 
   @staticmethod
-  def _get_effective_status(vehicle: Vehicle) -> VehicleStatus:
+  def _get_effective_status(
+    vehicle: Vehicle,
+  ) -> VehicleStatus:
     if vehicle.expiry_date < date.today():
       return VehicleStatus.EXPIRED
 
     return vehicle.status
 
   @staticmethod
-  def _get_status_message(status: VehicleStatus) -> str:
+  def _get_status_message(
+    status: VehicleStatus,
+  ) -> str:
     messages = {
-      VehicleStatus.ACTIVE: "Vehicle registration is active.",
-      VehicleStatus.INACTIVE: "Vehicle registration is inactive.",
-      VehicleStatus.EXPIRED: "Vehicle registration has expired.",
-      VehicleStatus.SUSPENDED: "Vehicle registration is suspended.",
+      VehicleStatus.ACTIVE:
+        "Vehicle registration is active.",
+      VehicleStatus.INACTIVE:
+        "Vehicle registration is inactive.",
+      VehicleStatus.EXPIRED:
+        "Vehicle registration has expired.",
+      VehicleStatus.SUSPENDED:
+        "Vehicle registration is suspended.",
     }
 
     return messages.get(
@@ -116,15 +125,15 @@ class VerificationService:
     if role == UserRole.ADMIN:
       return VerificationOwnerInfo(
         full_name=vehicle.owner_name,
-        phone_number=getattr(vehicle, "owner_phone", None),
-        email=getattr(vehicle, "owner_email", None),
-        address=getattr(vehicle, "owner_address", None),
+        phone_number=vehicle.owner_phone,
+        email=None,
+        address=vehicle.owner_address,
       )
 
     return VerificationOwnerInfo(
       full_name=vehicle.owner_name,
       phone_number=VerificationService._mask_phone_number(
-        getattr(vehicle, "owner_phone", None)
+        vehicle.owner_phone
       ),
       email=None,
       address=None,
@@ -142,11 +151,17 @@ class VerificationService:
     if len(cleaned) <= 4:
       return "*" * len(cleaned)
 
-    return f"{cleaned[:3]}{'*' * (len(cleaned) - 5)}{cleaned[-2:]}"
+    hidden_length = len(cleaned) - 5
+
+    return (
+      f"{cleaned[:3]}"
+      f"{'*' * hidden_length}"
+      f"{cleaned[-2:]}"
+    )
 
   @staticmethod
   def extract_recognition_info(
-    recognition_result: Any,
+    recognition_result,
   ) -> PlateRecognitionInfo:
     if isinstance(recognition_result, dict):
       result = recognition_result
@@ -155,22 +170,23 @@ class VerificationService:
     else:
       result = vars(recognition_result)
 
-    detected_plate = (
-      result.get("detected_plate")
-      or result.get("plate_number")
-      or result.get("plate")
-      or result.get("text")
-    )
+    detected_plate = result.get("plate_number")
 
     if not detected_plate:
       raise ValueError(
-        "The recognition engine did not return a plate number."
+        "The recognition engine did not return "
+        "a plate number."
       )
 
     return PlateRecognitionInfo(
       detected_plate=detected_plate,
-      detection_confidence=result.get("detection_confidence"),
-      ocr_confidence=result.get("ocr_confidence")
-      or result.get("confidence"),
-      processing_time=result.get("processing_time"),
+      detection_confidence=result.get(
+        "detection_confidence"
+      ),
+      ocr_confidence=result.get(
+        "ocr_confidence"
+      ),
+      processing_time_ms=result.get(
+        "processing_time_ms"
+      ),
     )

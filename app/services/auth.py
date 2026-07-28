@@ -11,14 +11,14 @@ def authenticate_user(
   db: Session,
   email: str,
   password: str,
-):
+) -> User | None:
   user = (
     db.query(User)
     .filter(User.email == email)
     .first()
   )
 
-  if not user:
+  if user is None:
     return None
 
   if not verify_password(
@@ -32,9 +32,9 @@ def authenticate_user(
 
 def login_user(
   user: User,
-):
+) -> dict[str, str]:
   token = create_access_token(
-    str(user.id),
+    str(user.id)
   )
 
   return {
@@ -42,7 +42,8 @@ def login_user(
     "token_type": "bearer",
   }
 
-def logout_user():
+
+def logout_user() -> dict[str, str]:
   return {
-      "message": "Logged out successfully.",
+    "message": "Logged out successfully.",
   }
