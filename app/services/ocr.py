@@ -37,12 +37,13 @@ class OCRService:
         "5": ["5", "S"],
         "S": ["S", "5", "6"],
 
-        "6": ["6", "G"],
+        "6": ["6", "G", "S"],
         "G": ["G", "6"],
 
         "8": ["8", "B"],
         "B": ["B", "8"],
         "H": ["H", "W"],
+        "W": ["W", "H"],
     }
 
     BLACKLIST = {
@@ -170,11 +171,9 @@ class OCRService:
     def is_letter(char: str) -> bool:
         return char.isalpha()
 
-
     @staticmethod
     def is_digit(char: str) -> bool:
         return char.isdigit()
-
 
     def position_score(
         self,
@@ -213,22 +212,18 @@ class OCRService:
         best = -200
 
         for pattern in (modern, old):
-
             score = 0
 
             for index, expect_letter in enumerate(pattern):
-
                 char = text[index]
 
                 if expect_letter:
-
                     if self.is_letter(char):
                         score += 25
                     else:
                         score -= 25
 
                 else:
-
                     if self.is_digit(char):
                         score += 25
                     else:
@@ -270,11 +265,9 @@ class OCRService:
         generated: set[str] = set()
 
         for pattern in patterns:
-
             possibilities: list[list[str]] = []
 
             for index, char in enumerate(text):
-
                 values = self.OCR_CORRECTIONS.get(
                     char,
                     [char],
@@ -285,7 +278,6 @@ class OCRService:
                 # the expected type.
                 #
                 if pattern[index] == "L":
-
                     filtered = [
                         value
                         for value in values
@@ -293,7 +285,6 @@ class OCRService:
                     ]
 
                 else:
-
                     filtered = [
                         value
                         for value in values
@@ -363,9 +354,7 @@ class OCRService:
         all_candidates: list[OCRCandidate] = []
 
         for _, raw_text, confidence in results:
-
             cleaned = self.clean_text(raw_text)
-
             print(f"{cleaned} ({confidence:.2f})")
 
             if not cleaned:
@@ -414,7 +403,6 @@ class OCRService:
             # Score every generated candidate.
             #
             for candidate in variants:
-
                 score, regex_ok = self.score_candidate(
                     candidate,
                     float(confidence),
@@ -445,7 +433,6 @@ class OCRService:
         ranked: dict[str, OCRCandidate] = {}
 
         for candidate in all_candidates:
-
             current = ranked.get(candidate.text)
 
             if (

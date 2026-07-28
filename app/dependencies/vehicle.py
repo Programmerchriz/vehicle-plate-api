@@ -7,7 +7,6 @@ from fastapi import (
 from sqlalchemy.orm import Session
 
 from app.config.database import get_db
-from app.exceptions.vehicle import VehicleNotFoundError
 from app.models.vehicle import Vehicle
 from app.services.vehicle import VehicleService
 

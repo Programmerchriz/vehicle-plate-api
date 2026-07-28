@@ -33,15 +33,9 @@ class VerificationService:
     current_user: User,
     recognition: PlateRecognitionInfo | None = None,
   ) -> VerificationResponse:
-    normalized_plate = cls.normalize_plate_number(
-      plate_number
-    )
-
+    normalized_plate = cls.normalize_plate_number(plate_number)
     vehicle_service = VehicleService(db)
-
-    vehicle = vehicle_service.get_vehicle_by_plate(
-      normalized_plate
-    )
+    vehicle = vehicle_service.get_vehicle_by_plate(normalized_plate)
 
     if vehicle is None:
       return VerificationResponse(
@@ -54,9 +48,7 @@ class VerificationService:
         recognition=recognition,
       )
 
-    effective_status = cls._get_effective_status(
-      vehicle
-    )
+    effective_status = cls._get_effective_status(vehicle)
 
     vehicle_summary = VerificationVehicleSummary(
       plate_number=vehicle.plate_number,
@@ -132,9 +124,7 @@ class VerificationService:
 
     return VerificationOwnerInfo(
       full_name=vehicle.owner_name,
-      phone_number=VerificationService._mask_phone_number(
-        vehicle.owner_phone
-      ),
+      phone_number=VerificationService._mask_phone_number(vehicle.owner_phone),
       email=None,
       address=None,
     )
@@ -180,13 +170,7 @@ class VerificationService:
 
     return PlateRecognitionInfo(
       detected_plate=detected_plate,
-      detection_confidence=result.get(
-        "detection_confidence"
-      ),
-      ocr_confidence=result.get(
-        "ocr_confidence"
-      ),
-      processing_time_ms=result.get(
-        "processing_time_ms"
-      ),
+      detection_confidence=result.get("detection_confidence"),
+      ocr_confidence=result.get("ocr_confidence"),
+      processing_time_ms=result.get("processing_time_ms"),
     )

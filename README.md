@@ -12,10 +12,10 @@ A FastAPI backend powering an AI-based Vehicle License Plate Recognition System.
 - OCR Recognition (EasyOCR)
 - OCR Cleaning
 - Vehicle Verification
-- Search History
-- Audit Logs
+<!-- - Search History
+- Audit Logs -->
 - PostgreSQL Database
-- Docker Support
+<!-- - Docker Support -->
 
 ## Tech Stack
 
