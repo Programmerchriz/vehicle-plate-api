@@ -1,3 +1,5 @@
+from datetime import date
+
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -41,10 +43,9 @@ class DashboardService:
         VehicleStatus.INACTIVE,
         0,
       ),
-      "expired_vehicles": status_counts.get(
-        VehicleStatus.EXPIRED,
-        0,
-      ),
+      "expired_vehicles": self.db.scalar(
+        select(func.count(Vehicle.id)).where(Vehicle.expiry_date < date.today())
+      ) or 0,
       "suspended_vehicles": status_counts.get(
         VehicleStatus.SUSPENDED,
         0,

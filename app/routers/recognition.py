@@ -1,10 +1,14 @@
 from fastapi import (
   APIRouter,
+  Depends,
   File,
   HTTPException,
   UploadFile,
   status,
 )
+
+from app.dependencies.auth import require_roles
+from app.models.enums import UserRole
 
 from app.schemas.recognition import (
   RecognitionError,
@@ -45,6 +49,7 @@ recognition_service = RecognitionService()
 
 async def recognize_image(
   file: UploadFile = File(...),
+  _=Depends(require_roles(UserRole.ADMIN, UserRole.OFFICER)),
 ) -> RecognitionResponse:
   try:
     return await recognition_service.recognize_image(file)

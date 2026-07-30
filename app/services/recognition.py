@@ -31,13 +31,12 @@ class RecognitionService:
 
         try:
             await self.image_processing.validate_image(file)
-
             image = await self.image_processing.decode_image(file)
 
-            save_debug_image(
-                "1_original.jpg",
-                image,
-            )
+            # save_debug_image(
+            #     "1_original.jpg",
+            #     image,
+            # )
 
             detection = self.detector.detect(image)
 
@@ -59,10 +58,10 @@ class RecognitionService:
                 y2=bbox.y2,
             )
 
-            save_debug_image(
-                "2_plate.jpg",
-                plate_image,
-            )
+            # save_debug_image(
+            #     "2_plate.jpg",
+            #     plate_image,
+            # )
 
             #
             # Pre-processing
@@ -76,19 +75,19 @@ class RecognitionService:
                 width=settings.PLATE_IMAGE_WIDTH,
             )
 
-            save_debug_image(
-                "3_gray.jpg",
-                gray,
-            )
+            # save_debug_image(
+            #     "3_gray.jpg",
+            #     gray,
+            # )
 
             threshold = self.image_processing.adaptive_threshold(
                 gray,
             )
 
-            save_debug_image(
-                "4_threshold.jpg",
-                threshold,
-            )
+            # save_debug_image(
+            #     "4_threshold.jpg",
+            #     threshold,
+            # )
 
             #
             # OCR
