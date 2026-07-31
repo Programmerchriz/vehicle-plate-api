@@ -347,15 +347,18 @@ class OCRService:
         results = self.reader.readtext(
             image,
             allowlist="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+            decoder="greedy",
+            detail=1,
+            paragraph=False,
         )
 
-        print("\n========== OCR ==========")
+        # print("\n========== OCR ==========")
 
         all_candidates: list[OCRCandidate] = []
 
         for _, raw_text, confidence in results:
             cleaned = self.clean_text(raw_text)
-            print(f"{cleaned} ({confidence:.2f})")
+            # print(f"{cleaned} ({confidence:.2f})")
 
             if not cleaned:
                 continue
@@ -417,7 +420,7 @@ class OCRService:
                     )
                 )
 
-        print("=========================\n")
+        # print("=========================\n")
 
         if not all_candidates:
             return OCRResult(
