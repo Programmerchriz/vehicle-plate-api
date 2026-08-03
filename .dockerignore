@@ -1,0 +1,42 @@
+.venv
+venv
+__pycache__
+*.py[cod]
+.git
+.gitignore
+debug
+.pytest_cache
+.mypy_cache
+
+*$py.class
+
+# Environment Variables
+.env
+.env.docker
+
+# IDE
+.vscode/
+.idea/
+
+# Database
+*.db
+
+# docker
+docker-compose.yml
+
+# Logs
+*.log
+
+# Uploads
+app/uploads/*
+!app/uploads/.gitkeep
+
+# Static Generated Files
+app/static/*
+!app/static/.gitkeep
+
+# Alembic
+alembic/versions/*.pyc
+
+scripts/
+debug/
