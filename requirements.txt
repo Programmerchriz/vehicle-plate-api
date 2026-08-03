@@ -38,4 +38,3 @@ lazy-loader==0.4
 matplotlib==3.10.5
 psutil==7.0.0
 polars==1.43.0
-ultralytics-thop==2.1.0
