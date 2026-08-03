@@ -1,30 +1,35 @@
-from ultralytics import YOLO
+from threading import Lock
+from typing import Any, ClassVar
+
 import numpy as np
 
+from app.config.settings import settings
 from app.schemas.recognition import (
   BoundingBox,
   DetectionResult,
 )
 
-from app.config.settings import settings
-
 
 class PlateDetectionService:
-  _model: YOLO | None = None
+  _model: ClassVar[Any | None] = None
+  _model_lock: ClassVar[Lock] = Lock()
 
   def __init__(
     self,
     model_path: str = settings.YOLO_MODEL_PATH,
   ) -> None:
-    if PlateDetectionService._model is None:
-      PlateDetectionService._model = YOLO(model_path)
+    self.model_path = model_path
 
   @property
-  def model(self) -> YOLO:
+  def model(self) -> Any:
     if PlateDetectionService._model is None:
-      raise RuntimeError(
-        "YOLO model has not been initialized."
-      )
+      with PlateDetectionService._model_lock:
+        if PlateDetectionService._model is None:
+          from ultralytics import YOLO
+
+          PlateDetectionService._model = YOLO(
+            self.model_path,
+          )
 
     return PlateDetectionService._model
 
@@ -34,6 +39,7 @@ class PlateDetectionService:
   ) -> DetectionResult | None:
     results = self.model.predict(
       source=image,
+      device="cpu",
       verbose=False,
     )
 
@@ -51,7 +57,11 @@ class PlateDetectionService:
     )
 
     confidence = float(best_box.conf[0])
-    if confidence < settings.DETECTION_CONFIDENCE_THRESHOLD:
+
+    if (
+      confidence
+      < settings.DETECTION_CONFIDENCE_THRESHOLD
+    ):
       return None
 
     x1, y1, x2, y2 = (
