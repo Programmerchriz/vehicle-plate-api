@@ -14,18 +14,18 @@ from app.routers.verification import router as verification_router
 from app.services.detector import PlateDetectionService
 from app.services.ocr import OCRService
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-  # Warm up AI models
-  PlateDetectionService()
-  OCRService()
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#   # Warm up AI models
+#   PlateDetectionService()
+#   OCRService()
 
-  yield
+#   yield
 
 app = FastAPI(
   title=settings.APP_NAME,
   version=settings.APP_VERSION,
-  lifespan=lifespan,
+  # lifespan=lifespan,
 )
 
 app.add_middleware(
