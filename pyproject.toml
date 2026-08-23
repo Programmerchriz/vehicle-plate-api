@@ -4,9 +4,6 @@ version = "0.1.0"
 requires-python = ">=3.12,<3.13"
 
 dependencies = [
-  "torch==2.6.0+cpu",
-  "torchvision==0.21.0+cpu",
-
   "fastapi==0.139.0",
   "uvicorn==0.51.0",
 
@@ -41,11 +38,14 @@ dependencies = [
   "lazy-loader==0.4",
   "matplotlib==3.10.5",
   "psutil==7.0.0",
-  "polars==1.43.2",
-  "ultralytics-thop==2.1.0",
+  "polars==1.43.0",
 
+  "ultralytics-thop==2.1.0",
   "easyocr==1.7.2",
   "ultralytics==8.4.93",
+
+  "torch==2.6.0+cpu",
+  "torchvision==0.21.0",
 ]
 
 [tool.uv]
