@@ -36,3 +36,5 @@ alembic/versions/*.pyc
 
 scripts/
 debug/
+tests/
+assets/

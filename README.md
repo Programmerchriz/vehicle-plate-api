@@ -92,7 +92,7 @@ vehicle-plate-api/
     utils/debug.py
 ```
 
-# Chapter 1 - High-Level System Overview
+## Chapter 1 - High-Level System Overview
 
 The application manages registered vehicles and helps officers/admins recognize and verify license plates.
 
@@ -174,13 +174,13 @@ Roles:
 - Admin: can access admin routes, create/update vehicles, delete vehicles, verify plates, and receive full owner phone/address in verification.
 - Officer: can access officer routes, create/update vehicles, verify plates, and receive masked owner details in verification.
 
-# Chapter 2 - Repository and Folder Structure
+## Chapter 2 - Repository and Folder Structure
 
 ```text
 vehicle-plate-api/  -> FastAPI backend
 ```
 
-## Backend folders
+### Backend folders
 
 `app/config`
 
@@ -232,9 +232,9 @@ vehicle-plate-api/  -> FastAPI backend
 - Tracks database schema migrations.
 - Current migrations create the `users` and `vehicles` tables.
 
-# Chapter 3 - Complete End-to-End Workflow
+## Chapter 3 - Complete End-to-End Workflow
 
-## Registered vehicle workflow
+### Registered vehicle workflow
 
 ```text
 1. Officer logs in.
@@ -283,7 +283,7 @@ vehicle-plate-api/  -> FastAPI backend
    - OwnerInfo.tsx
 ```
 
-## Unknown vehicle workflow
+### Unknown vehicle workflow
 
 ```text
 1. Recognition returns a plate.
@@ -311,9 +311,9 @@ Path: `vehicle-plate/src/components/recognition/RecognitionPage.tsx`
 />
 ```
 
-# Chapter 4 - Error Handling
+## Chapter 4 - Error Handling
 
-## Backend error flow
+### Backend error flow
 
 Common mechanisms:
 
@@ -356,7 +356,7 @@ What it does:
 - Converts backend errors into JavaScript exceptions.
 - Preserves validation details for later UI use.
 
-## Error table
+### Error table
 
 | Scenario | Backend status | Backend source | Frontend behavior |
 |---|---:|---|---|
@@ -375,7 +375,7 @@ What it does:
 
 Frontend components often reset loading in `finally`, for example `VehicleForm`, `LoginPage`, `RecognitionPage`, and `DashboardPage`.
 
-# Chapter 5 - Architectural Decisions
+## Chapter 5 - Architectural Decisions
 
 | Decision | Benefit | Trade-off | Alternative | Why reasonable for this |
 |---|---|---|---|---|
@@ -395,9 +395,9 @@ Frontend components often reset loading in `finally`, for example `VehicleForm`,
 | Do not store images in vehicle table | Vehicle records stay small | No historical image audit | Store image metadata/history | Recognition is separate from registration |
 | Plate number as lookup key | Matches business workflow | Plates can change in real life | Internal vehicle identifier or VIN | Plate verification is central use case |
 
-# Chapter 6 - Testing Guide
+## Chapter 6 - Testing Guide
 
-## Manual backend tests
+### Manual backend tests
 
 1. Start backend with `uvicorn app.main:app --reload` from `vehicle-plate-api`.
 2. Open `/docs`.
@@ -415,6 +415,58 @@ Frontend components often reset loading in `finally`, for example `VehicleForm`,
 14. Create an expired registration and confirm verification returns `EXPIRED`.
 15. Upload invalid file type to recognition and confirm an error.
 16. Upload a valid vehicle image and inspect recognition response fields.
+
+## Chapter 7 - Recognition Performance
+
+The recognition endpoint was benchmarked against the live API using **100 consecutive requests** with the same license plate image.
+
+### Recognition Processing Time
+
+| Metric               |          Average |
+| -------------------- | ---------------: |
+| Requests 1–10        |     12,488.68 ms |
+| Requests 11–20       |     12,475.86 ms |
+| Requests 21–30       |     12,434.13 ms |
+| Requests 31–40       |     12,479.28 ms |
+| Requests 41–50       |     12,420.72 ms |
+| Requests 51–60       |     12,414.11 ms |
+| Requests 61–70       |     12,301.72 ms |
+| Requests 71–80       |     12,357.87 ms |
+| Requests 81–90       |     12,464.01 ms |
+| Requests 91–100      |     12,472.42 ms |
+| **All 100 requests** | **12,430.88 ms** |
+
+### Statistical Summary
+
+| Metric            |       Result |
+| ----------------- | -----------: |
+| Minimum           | 12,162.94 ms |
+| Maximum           | 12,782.93 ms |
+| Median (P50)      | 12,428.61 ms |
+| P95               | 12,605.94 ms |
+| P99               | 12,708.67 ms |
+| First 99 requests | 12,430.55 ms |
+| Last 99 requests  | 12,430.45 ms |
+
+### Reliability
+
+| Metric                  |             Result |
+| ----------------------- | -----------------: |
+| Total requests          |                100 |
+| Successful (HTTP 200)   |                100 |
+| Failed                  |                  0 |
+| Recognition consistency | 100/100 same plate |
+
+### HTTP Request Timing
+
+| Metric                    |       Result |
+| ------------------------- | -----------: |
+| Average HTTP request time | 14,317.81 ms |
+| Minimum HTTP request time | 13,656.46 ms |
+| Maximum HTTP request time | 22,186.35 ms |
+
+**Benchmark result:** The live recognition endpoint processed all 100 requests successfully with an average server-side recognition time of **12.43 seconds**, with very low variance between requests.
+
 
 # Glossary
 
